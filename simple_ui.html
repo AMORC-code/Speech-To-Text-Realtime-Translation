@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Translation - Apple Music Style</title>
+    <title>AMORC Live Translation - English to Italian</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -27,16 +27,28 @@
             position: relative;
             z-index: 2;
         }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            margin: 0;
+            opacity: 0.8;
+        }
         
         .lyrics-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 20px;
             position: relative;
             overflow: hidden;
+            height: calc(100vh - 180px); /* Account for header and status bar */
         }
         
         .background {
@@ -51,49 +63,85 @@
             transition: all 2s ease;
             animation: gradientShift 15s ease infinite;
             z-index: 1;
+            mix-blend-mode: plus-lighter;
+        }
+
+        .background::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulseGlow 4s ease infinite;
         }
         
         .translation-pair {
             width: 100%;
-            max-width: 800px;
-            margin: 20px 0;
             opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.5s forwards;
+            transform: translateY(20px) scale(0.95);
+            animation: fadeIn 0.5s forwards;
             position: relative;
             z-index: 2;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .english, .italian {
             text-align: center;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 20px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
-            margin: 5px 0;
-            transition: all 0.3s ease;
+            margin: 10px 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
         
         .english {
-            font-size: 28px;
+            font-size: 48px;
             color: #fff;
             transform: scale(0.95);
             opacity: 0.8;
+            letter-spacing: -0.5px;
+            font-weight: 600;
         }
         
         .italian {
-            font-size: 24px;
+            font-size: 42px;
             color: #A0E9FF;
             transform: scale(0.95);
             opacity: 0.8;
+            letter-spacing: -0.3px;
+            font-weight: 500;
+        }
+
+        .english::before, .italian::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
         }
         
         .translation-pair:hover .english,
         .translation-pair:hover .italian {
-            transform: scale(1);
+            transform: scale(1.02);
             opacity: 1;
             background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .translation-pair:hover .english::before,
+        .translation-pair:hover .italian::before {
+            transform: translateX(100%);
+            transition: transform 1s ease;
         }
         
         .status {
@@ -103,21 +151,24 @@
             right: 0;
             text-align: center;
             color: rgba(255, 255, 255, 0.6);
-            padding: 10px;
+            padding: 20px;
             background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 3;
+            font-size: 20px;
+            letter-spacing: 0.5px;
         }
         
         .mic-icon {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             background: #4CAF50;
             border-radius: 50%;
-            margin-right: 8px;
+            margin-right: 12px;
             animation: pulse 1.5s infinite;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
         
         @keyframes pulse {
@@ -126,14 +177,14 @@
             100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
         }
         
-        @keyframes fadeInUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(20px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
         
@@ -143,20 +194,425 @@
             66% { background: linear-gradient(45deg, #2193b0, #6dd5ed); }
             100% { background: linear-gradient(45deg, #1e3c72, #2a5298); }
         }
+
+        @keyframes pulseGlow {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+            100% { opacity: 0.3; }
+        }
         
         #translations {
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 30px;
             position: relative;
             z-index: 2;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100%;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        #translations::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        #translations::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        #translations::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            border: 3px solid rgba(0, 0, 0, 0.2);
+        }
+
+        #translations::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .english { font-size: 32px; }
+            .italian { font-size: 28px; }
+            .translation-pair { margin: 15px 0; }
+            .header h1 { font-size: 2em; }
+            .header p { font-size: 1em; }
+        }
+
+        .record-button {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .record-button::before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ff3b30;
+            transition: all 0.3s ease;
+        }
+
+        .record-button.recording::before {
+            background: #ff3b30;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+        }
+
+        .record-button:hover {
+            transform: translateX(-50%) scale(1.05);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .record-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .permission-banner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: none;
+        }
+
+        .permission-banner.show {
+            display: block;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .permission-button {
+            background: #007AFF;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .permission-button:hover {
+            background: #0063CC;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .record-button {
+                bottom: 120px;
+            }
+        }
+
+        .device-selector {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .device-selector select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            width: 200px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .device-selector select option {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .device-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .device-info {
+            position: fixed;
+            top: 20px;
+            right: 90px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            max-width: 250px;
+            text-align: right;
+        }
+
+        .device-info p {
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        .device-info .device-name {
+            font-weight: bold;
+            color: #A0E9FF;
+        }
+
+        @media (max-width: 768px) {
+            .device-selector, .device-info {
+                position: static;
+                margin: 10px;
+                text-align: center;
+            }
+            .device-selector select {
+                width: 100%;
+            }
+            .settings-button {
+                top: auto;
+                bottom: 100px;
+                right: 20px;
+            }
+        }
+
+        .settings-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .settings-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: rotate(30deg);
+        }
+
+        .settings-button svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+            opacity: 0.8;
+        }
+
+        .settings-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            z-index: 2000;
+            width: 90%;
+            max-width: 400px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .settings-modal.show {
+            display: block;
+            animation: modalFadeIn 0.3s forwards;
+        }
+
+        .settings-modal h2 {
+            margin: 0 0 20px 0;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-section h3 {
+            color: #A0E9FF;
+            font-size: 18px;
+            margin: 0 0 15px 0;
+            font-weight: 500;
+        }
+
+        .font-size-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .font-size-controls button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .font-size-controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .font-size-display {
+            color: white;
+            font-size: 18px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .close-settings {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .close-settings:hover {
+            opacity: 1;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1999;
+            display: none;
+        }
+
+        .modal-overlay.show {
+            display: block;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .settings-modal {
+                width: 85%;
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <button class="settings-button" id="settings-button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.65.07-.97 0-.32-.03-.65-.07-.97l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65c-.04-.24-.25-.42-.5-.42h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 12c-.04.32-.07.65-.07.97 0 .32.03.65.07.97l-2.11 1.63c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.31.61.22l2.49-1c.52.39 1.06.73 1.69.98l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.25 1.17-.59 1.69-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.63M12 13.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        </svg>
+    </button>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+    
+    <div class="settings-modal" id="settings-modal">
+        <button class="close-settings" id="close-settings">×</button>
+        <h2>Settings</h2>
+        
+        <div class="settings-section">
+            <h3>English Text Size</h3>
+            <div class="font-size-controls">
+                <button id="decrease-english">-</button>
+                <span class="font-size-display" id="english-size">48px</span>
+                <button id="increase-english">+</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>Italian Text Size</h3>
+            <div class="font-size-controls">
+                <button id="decrease-italian">-</button>
+                <span class="font-size-display" id="italian-size">42px</span>
+                <button id="increase-italian">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="device-selector">
+        <label for="audioSource">Select Microphone:</label>
+        <select id="audioSource"></select>
+    </div>
+
+    <div class="device-info">
+        <p>Current Device:</p>
+        <p class="device-name" id="currentDevice">None selected</p>
+    </div>
+
     <div class="header">
         <h1>English to Italian Translator</h1>
         <p>Speak in English to see the Italian translation</p>
@@ -172,10 +628,148 @@
         Listening...
     </div>
 
+    <div class="permission-banner" id="permission-banner">
+        <h2>Microphone Access Needed</h2>
+        <p>Please allow microphone access to use the translator</p>
+        <button class="permission-button" id="permission-button">Enable Microphone</button>
+    </div>
+
+    <button class="record-button" id="record-button"></button>
+
     <script>
         let lastContent = '';
         const translations = document.getElementById('translations');
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        const recordButton = document.getElementById('record-button');
+        const permissionBanner = document.getElementById('permission-banner');
+        const permissionButton = document.getElementById('permission-button');
+        const audioSelect = document.getElementById('audioSource');
+        const currentDeviceDisplay = document.getElementById('currentDevice');
+        let stream;
         
+        // Settings functionality
+        const settingsButton = document.getElementById('settings-button');
+        const settingsModal = document.getElementById('settings-modal');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const closeSettings = document.getElementById('close-settings');
+        
+        const increaseEnglish = document.getElementById('increase-english');
+        const decreaseEnglish = document.getElementById('decrease-english');
+        const increaseItalian = document.getElementById('increase-italian');
+        const decreaseItalian = document.getElementById('decrease-italian');
+        
+        const englishSizeDisplay = document.getElementById('english-size');
+        const italianSizeDisplay = document.getElementById('italian-size');
+
+        let englishFontSize = 48;
+        let italianFontSize = 42;
+
+        function updateFontSizes() {
+            document.documentElement.style.setProperty('--english-font-size', `${englishFontSize}px`);
+            document.documentElement.style.setProperty('--italian-font-size', `${italianFontSize}px`);
+            
+            englishSizeDisplay.textContent = `${englishFontSize}px`;
+            italianSizeDisplay.textContent = `${italianFontSize}px`;
+
+            // Update existing elements
+            document.querySelectorAll('.english').forEach(el => {
+                el.style.fontSize = `${englishFontSize}px`;
+            });
+            
+            document.querySelectorAll('.italian').forEach(el => {
+                el.style.fontSize = `${italianFontSize}px`;
+            });
+        }
+
+        increaseEnglish.addEventListener('click', () => {
+            englishFontSize = Math.min(englishFontSize + 4, 72);
+            updateFontSizes();
+        });
+
+        decreaseEnglish.addEventListener('click', () => {
+            englishFontSize = Math.max(englishFontSize - 4, 24);
+            updateFontSizes();
+        });
+
+        increaseItalian.addEventListener('click', () => {
+            italianFontSize = Math.min(italianFontSize + 4, 72);
+            updateFontSizes();
+        });
+
+        decreaseItalian.addEventListener('click', () => {
+            italianFontSize = Math.max(italianFontSize - 4, 24);
+            updateFontSizes();
+        });
+
+        settingsButton.addEventListener('click', () => {
+            settingsModal.classList.add('show');
+            modalOverlay.classList.add('show');
+        });
+
+        function closeModal() {
+            settingsModal.classList.remove('show');
+            modalOverlay.classList.remove('show');
+        }
+
+        closeSettings.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', closeModal);
+
+        // Update the createTranslationPair function to use the current font sizes
+        function createTranslationPair(english, italian) {
+            const pair = document.createElement('div');
+            pair.className = 'translation-pair';
+            
+            const englishDiv = document.createElement('div');
+            englishDiv.className = 'english';
+            englishDiv.textContent = english;
+            englishDiv.style.fontSize = `${englishFontSize}px`;
+            
+            const italianDiv = document.createElement('div');
+            italianDiv.className = 'italian';
+            italianDiv.textContent = italian;
+            italianDiv.style.fontSize = `${italianFontSize}px`;
+            
+            pair.appendChild(englishDiv);
+            pair.appendChild(italianDiv);
+            
+            return pair;
+        }
+
+        // Update the updateTranslations function to use createTranslationPair
+        function updateTranslations() {
+            fetch('translations.txt?' + new Date().getTime())
+                .then(response => response.text())
+                .then(content => {
+                    if (content !== lastContent && content.trim()) {
+                        const [english, italian] = content.split('\n');
+                        
+                        const pair = createTranslationPair(english, italian);
+                        translations.insertBefore(pair, translations.firstChild);
+                        
+                        while (translations.children.length > 10) {
+                            translations.removeChild(translations.lastChild);
+                        }
+                        
+                        if (Math.random() > 0.7) {
+                            const background = document.querySelector('.background');
+                            background.style.opacity = 0.4 + Math.random() * 0.4;
+                            background.style.filter = 'blur(30px) brightness(1.2)';
+                            setTimeout(() => {
+                                background.style.filter = 'blur(50px) brightness(1)';
+                            }, 200);
+                        }
+                        
+                        lastContent = content;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Initialize font sizes
+        updateFontSizes();
+
         function updateTranslations() {
             fetch('translations.txt?' + new Date().getTime())
                 .then(response => response.text())
@@ -198,17 +792,24 @@
                         pair.appendChild(englishDiv);
                         pair.appendChild(italianDiv);
                         
-                        // Add to container
-                        translations.appendChild(pair);
+                        // Add to container at the beginning
+                        translations.insertBefore(pair, translations.firstChild);
                         
-                        // Keep only last 5 translations
-                        while (translations.children.length > 5) {
-                            translations.removeChild(translations.firstChild);
+                        // Keep only last 10 translations
+                        while (translations.children.length > 10) {
+                            translations.removeChild(translations.lastChild);
                         }
                         
                         // Update background gradient randomly
                         if (Math.random() > 0.7) {
-                            document.querySelector('.background').style.opacity = 0.4 + Math.random() * 0.4;
+                            const background = document.querySelector('.background');
+                            background.style.opacity = 0.4 + Math.random() * 0.4;
+                            
+                            // Add a quick flash effect
+                            background.style.filter = 'blur(30px) brightness(1.2)';
+                            setTimeout(() => {
+                                background.style.filter = 'blur(50px) brightness(1)';
+                            }, 200);
                         }
                         
                         lastContent = content;
@@ -219,6 +820,124 @@
         
         // Poll for updates every 100ms
         setInterval(updateTranslations, 100);
+
+        // Get available audio devices
+        async function getConnectedDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioDevices = devices.filter(device => device.kind === 'audioinput');
+            
+            // Clear the select element
+            audioSelect.innerHTML = '';
+            
+            // Add devices to select element
+            audioDevices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Microphone ${audioSelect.length + 1}`;
+                audioSelect.appendChild(option);
+            });
+
+            // If we have a device selected, make sure it's reflected in the select
+            if (stream) {
+                const track = stream.getAudioTracks()[0];
+                const currentDevice = audioDevices.find(device => device.label === track.label);
+                if (currentDevice) {
+                    audioSelect.value = currentDevice.deviceId;
+                    currentDeviceDisplay.textContent = currentDevice.label;
+                }
+            }
+        }
+
+        // Handle device selection change
+        audioSelect.addEventListener('change', async () => {
+            const deviceId = audioSelect.value;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined
+                    }
+                });
+                setupRecording();
+                currentDeviceDisplay.textContent = audioSelect.options[audioSelect.selectedIndex].text;
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                permissionBanner.classList.add('show');
+            }
+        });
+
+        // Request microphone permission
+        async function requestMicrophonePermission() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                await getConnectedDevices(); // Get and populate device list
+                setupRecording();
+                permissionBanner.classList.remove('show');
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                permissionBanner.classList.add('show');
+            }
+        }
+
+        // Setup recording functionality
+        function setupRecording() {
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('audio', audioBlob);
+
+                try {
+                    await fetch('/audio', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (error) {
+                    console.error('Error sending audio:', error);
+                }
+
+                audioChunks = [];
+            };
+        }
+
+        // Handle record button clicks
+        recordButton.addEventListener('click', () => {
+            if (!mediaRecorder) {
+                requestMicrophonePermission();
+                return;
+            }
+
+            if (isRecording) {
+                mediaRecorder.stop();
+                recordButton.classList.remove('recording');
+            } else {
+                mediaRecorder.start();
+                recordButton.classList.add('recording');
+            }
+            isRecording = !isRecording;
+        });
+
+        // Handle permission button clicks
+        permissionButton.addEventListener('click', requestMicrophonePermission);
+
+        // Listen for device changes
+        navigator.mediaDevices.addEventListener('devicechange', getConnectedDevices);
+
+        // Initial permission check and device enumeration
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            requestMicrophonePermission();
+        } else {
+            permissionBanner.innerHTML = '<h2>Device Not Supported</h2><p>Sorry, your device or browser doesn\'t support microphone access.</p>';
+            permissionBanner.classList.add('show');
+        }
     </script>
 </body>
 </html> 
