@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  whisper-app:
+    build: .
+    ports:
+      - "7878:7878"
+    environment:
+      - MODEL_SIZE=large-v3
+      - BACKEND=mlx-whisper
+      - LANGUAGE=en
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G 
