@@ -3,39 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Translation - Simple Version</title>
+    <title>Live Translation - Apple Music Style</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            padding: 20px;
-            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            padding: 0;
+            background: #000;
             color: #fff;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        
-        .translation {
-            margin: 20px 0;
+        .header {
             padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .lyrics-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            filter: blur(50px);
+            opacity: 0.6;
+            transition: all 2s ease;
+            animation: gradientShift 15s ease infinite;
+            z-index: 1;
+        }
+        
+        .translation-pair {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .english, .italian {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            margin: 5px 0;
+            transition: all 0.3s ease;
         }
         
         .english {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 28px;
+            color: #fff;
+            transform: scale(0.95);
+            opacity: 0.8;
         }
         
         .italian {
             font-size: 24px;
             color: #A0E9FF;
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+        
+        .translation-pair:hover .english,
+        .translation-pair:hover .italian {
+            transform: scale(1);
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.15);
         }
         
         .status {
@@ -45,6 +103,11 @@
             right: 0;
             text-align: center;
             color: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 3;
         }
         
         .mic-icon {
@@ -58,21 +121,50 @@
         }
         
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes gradientShift {
+            0% { background: linear-gradient(45deg, #1e3c72, #2a5298); }
+            33% { background: linear-gradient(45deg, #834d9b, #d04ed6); }
+            66% { background: linear-gradient(45deg, #2193b0, #6dd5ed); }
+            100% { background: linear-gradient(45deg, #1e3c72, #2a5298); }
+        }
+        
+        #translations {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 2;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="header">
         <h1>English to Italian Translator</h1>
         <p>Speak in English to see the Italian translation</p>
-        
-        <div class="translation">
-            <div id="english" class="english"></div>
-            <div id="italian" class="italian"></div>
-        </div>
+    </div>
+    
+    <div class="lyrics-container">
+        <div class="background"></div>
+        <div id="translations"></div>
     </div>
     
     <div class="status">
@@ -82,15 +174,43 @@
 
     <script>
         let lastContent = '';
+        const translations = document.getElementById('translations');
         
         function updateTranslations() {
-            fetch('translations.txt?' + new Date().getTime())  // Prevent caching
+            fetch('translations.txt?' + new Date().getTime())
                 .then(response => response.text())
                 .then(content => {
-                    if (content !== lastContent) {
+                    if (content !== lastContent && content.trim()) {
                         const [english, italian] = content.split('\n');
-                        document.getElementById('english').textContent = english;
-                        document.getElementById('italian').textContent = italian;
+                        
+                        // Create new translation pair
+                        const pair = document.createElement('div');
+                        pair.className = 'translation-pair';
+                        
+                        const englishDiv = document.createElement('div');
+                        englishDiv.className = 'english';
+                        englishDiv.textContent = english;
+                        
+                        const italianDiv = document.createElement('div');
+                        italianDiv.className = 'italian';
+                        italianDiv.textContent = italian;
+                        
+                        pair.appendChild(englishDiv);
+                        pair.appendChild(italianDiv);
+                        
+                        // Add to container
+                        translations.appendChild(pair);
+                        
+                        // Keep only last 5 translations
+                        while (translations.children.length > 5) {
+                            translations.removeChild(translations.firstChild);
+                        }
+                        
+                        // Update background gradient randomly
+                        if (Math.random() > 0.7) {
+                            document.querySelector('.background').style.opacity = 0.4 + Math.random() * 0.4;
+                        }
+                        
                         lastContent = content;
                     }
                 })
