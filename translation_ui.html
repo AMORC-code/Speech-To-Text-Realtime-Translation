@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Translation - Apple Music Style</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            padding: 20px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .lyrics-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            filter: blur(50px);
+            z-index: -1;
+            opacity: 0.6;
+            transition: background 2s ease;
+        }
+        
+        .lyric-line {
+            font-size: 32px;
+            margin: 12px 0;
+            text-align: center;
+            opacity: 0.5;
+            transform: scale(0.9);
+            transition: all 0.5s ease;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+        
+        .lyric-line.active {
+            opacity: 1;
+            transform: scale(1);
+            font-weight: 600;
+        }
+        
+        .english {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .italian {
+            color: #A0E9FF;
+            margin-bottom: 40px;
+        }
+        
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            padding: 10px;
+        }
+        
+        .mic-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .mic-icon.listening {
+            background-color: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .mic-icon.processing {
+            background-color: #FFC107;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+        
+        #lyrics-history {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            width: 100%;
+            overflow-y: auto;
+            padding-bottom: 100px;
+            scroll-behavior: smooth;
+        }
+        
+        .lyric-pair {
+            margin-bottom: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .lyric-line {
+                font-size: 24px;
+            }
+        }
+
+        .connection-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .connected {
+            color: #4CAF50;
+        }
+
+        .disconnected {
+            color: #F44336;
+        }
+
+        .connecting {
+            color: #FFC107;
+        }
+
+        .retry-btn {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 3px 10px;
+            background-color: #1e88e5;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-indicator" id="connection">
+        <span id="connection-status" class="connecting">Connecting...</span>
+        <span class="retry-btn" id="retry-btn">Reconnect</span>
+    </div>
+
+    <div class="header">
+        <h1>English to Italian Translator</h1>
+        <p>Speak in English to see the Italian translation</p>
+    </div>
+    
+    <div class="lyrics-container">
+        <div class="background"></div>
+        <div id="lyrics-history"></div>
+    </div>
+    
+    <div class="status">
+        <span class="mic-icon listening" id="status-icon"></span>
+        <span id="status-text">Listening...</span>
+    </div>
+
+    <script>
+        const lyricsHistory = document.getElementById('lyrics-history');
+        const statusIcon = document.getElementById('status-icon');
+        const statusText = document.getElementById('status-text');
+        const background = document.querySelector('.background');
+        const connectionStatus = document.getElementById('connection-status');
+        const retryBtn = document.getElementById('retry-btn');
+        
+        // Function to generate a random gradient background
+        function updateBackground() {
+            const colors = [
+                ['#1e3c72', '#2a5298'],
+                ['#4B79A1', '#283E51'],
+                ['#834d9b', '#d04ed6'],
+                ['#0B486B', '#F56217'],
+                ['#3A1C71', '#D76D77', '#FFAF7B'],
+                ['#12c2e9', '#c471ed', '#f64f59'],
+                ['#009688', '#26A69A']
+            ];
+            
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const gradient = `linear-gradient(45deg, ${randomColor.join(', ')})`;
+            background.style.background = gradient;
+        }
+        
+        // Update background every 30 seconds
+        updateBackground();
+        setInterval(updateBackground, 30000);
+
+        let eventSource;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const reconnectDelay = 2000; // 2 seconds
+
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            connectionStatus.textContent = 'Connecting...';
+            connectionStatus.className = 'connecting';
+            
+            // Connect to SSE endpoint with correct port
+            eventSource = new EventSource('http://localhost:7878/translations');
+            
+            eventSource.onopen = function() {
+                console.log('Connected to translation server');
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connected';
+                reconnectAttempts = 0;
+            };
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    if (message.type === 'translation') {
+                        // Create a new lyric pair container
+                        const lyricPair = document.createElement('div');
+                        lyricPair.className = 'lyric-pair';
+                        
+                        // Add English text
+                        const englishLine = document.createElement('div');
+                        englishLine.className = 'lyric-line english active';
+                        englishLine.textContent = message.english;
+                        lyricPair.appendChild(englishLine);
+                        
+                        // Add Italian translation
+                        const italianLine = document.createElement('div');
+                        italianLine.className = 'lyric-line italian active';
+                        italianLine.textContent = message.italian;
+                        lyricPair.appendChild(italianLine);
+                        
+                        // Add to history
+                        lyricsHistory.appendChild(lyricPair);
+                        
+                        // Scroll to latest
+                        lyricsHistory.scrollTop = lyricsHistory.scrollHeight;
+                        
+                        // Update background occasionally
+                        if (Math.random() > 0.7) {
+                            updateBackground();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing SSE message:', error);
+                }
+            };
+            
+            eventSource.onerror = function() {
+                console.log('SSE connection closed');
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'disconnected';
+                
+                // Try to reconnect automatically
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectSSE, reconnectDelay);
+                    connectionStatus.textContent = `Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})...`;
+                    connectionStatus.className = 'connecting';
+                } else {
+                    connectionStatus.textContent = 'Connection failed';
+                    connectionStatus.className = 'disconnected';
+                }
+            };
+        }
+        
+        // Manual reconnect button
+        retryBtn.addEventListener('click', function() {
+            reconnectAttempts = 0;
+            connectSSE();
+        });
+
+        // Initial connection
+        connectSSE();
+    </script>
+</body>
+</html> 

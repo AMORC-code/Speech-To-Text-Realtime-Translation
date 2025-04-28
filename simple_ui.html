@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Translation - Simple Version</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .translation {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .english {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .italian {
+            font-size: 24px;
+            color: #A0E9FF;
+        }
+        
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .mic-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>English to Italian Translator</h1>
+        <p>Speak in English to see the Italian translation</p>
+        
+        <div class="translation">
+            <div id="english" class="english"></div>
+            <div id="italian" class="italian"></div>
+        </div>
+    </div>
+    
+    <div class="status">
+        <span class="mic-icon"></span>
+        Listening...
+    </div>
+
+    <script>
+        let lastContent = '';
+        
+        function updateTranslations() {
+            fetch('translations.txt?' + new Date().getTime())  // Prevent caching
+                .then(response => response.text())
+                .then(content => {
+                    if (content !== lastContent) {
+                        const [english, italian] = content.split('\n');
+                        document.getElementById('english').textContent = english;
+                        document.getElementById('italian').textContent = italian;
+                        lastContent = content;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        // Poll for updates every 100ms
+        setInterval(updateTranslations, 100);
+    </script>
+</body>
+</html> 
