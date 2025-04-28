@@ -614,7 +614,7 @@
     </div>
 
     <div class="header">
-        <h1>English to Italian Translator</h1>
+        <h1>AMORC Live Translation - English to Italian</h1>
         <p>Speak in English to see the Italian translation</p>
     </div>
     
@@ -745,52 +745,8 @@
                     if (content !== lastContent && content.trim()) {
                         const [english, italian] = content.split('\n');
                         
+                        // Use the createTranslationPair function to ensure consistent styling
                         const pair = createTranslationPair(english, italian);
-                        translations.insertBefore(pair, translations.firstChild);
-                        
-                        while (translations.children.length > 10) {
-                            translations.removeChild(translations.lastChild);
-                        }
-                        
-                        if (Math.random() > 0.7) {
-                            const background = document.querySelector('.background');
-                            background.style.opacity = 0.4 + Math.random() * 0.4;
-                            background.style.filter = 'blur(30px) brightness(1.2)';
-                            setTimeout(() => {
-                                background.style.filter = 'blur(50px) brightness(1)';
-                            }, 200);
-                        }
-                        
-                        lastContent = content;
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-
-        // Initialize font sizes
-        updateFontSizes();
-
-        function updateTranslations() {
-            fetch('translations.txt?' + new Date().getTime())
-                .then(response => response.text())
-                .then(content => {
-                    if (content !== lastContent && content.trim()) {
-                        const [english, italian] = content.split('\n');
-                        
-                        // Create new translation pair
-                        const pair = document.createElement('div');
-                        pair.className = 'translation-pair';
-                        
-                        const englishDiv = document.createElement('div');
-                        englishDiv.className = 'english';
-                        englishDiv.textContent = english;
-                        
-                        const italianDiv = document.createElement('div');
-                        italianDiv.className = 'italian';
-                        italianDiv.textContent = italian;
-                        
-                        pair.appendChild(englishDiv);
-                        pair.appendChild(italianDiv);
                         
                         // Add to container at the beginning
                         translations.insertBefore(pair, translations.firstChild);
@@ -804,8 +760,6 @@
                         if (Math.random() > 0.7) {
                             const background = document.querySelector('.background');
                             background.style.opacity = 0.4 + Math.random() * 0.4;
-                            
-                            // Add a quick flash effect
                             background.style.filter = 'blur(30px) brightness(1.2)';
                             setTimeout(() => {
                                 background.style.filter = 'blur(50px) brightness(1)';
@@ -817,8 +771,9 @@
                 })
                 .catch(error => console.error('Error:', error));
         }
-        
-        // Poll for updates every 100ms
+
+        // Initialize font sizes and start polling
+        updateFontSizes();
         setInterval(updateTranslations, 100);
 
         // Get available audio devices
